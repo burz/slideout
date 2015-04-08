@@ -68,6 +68,7 @@ function Slideout(options) {
 
   // Init the change callbacks
   this._beforeChangeCallbacks = [];
+  this._inChangeCallbacks = [];
   this._changeCallbacks = [];
 }
 
@@ -81,6 +82,15 @@ Slideout.prototype._runBeforeChangeCallbacks = function () {
 };
 
 /**
+ * Runs the inchange callbacks associated with the slideout
+ */
+Slideout.prototype._runInChangeCallbacks = function () {
+  for(var i = 0; i < this._inChangeCallbacks.length; ++i) {
+    this._inChangeCallbacks[i]();
+  }
+};
+
+/**
  * Runs the beforechange callbacks associated with the slideout
  */
 Slideout.prototype._runChangeCallbacks = function () {
@@ -90,11 +100,19 @@ Slideout.prototype._runChangeCallbacks = function () {
 };
 
 /**
- * Stores callback functions that are called after the slideout
- * finishes changing state
+ * Stores callback functions that are called before the slideout
+ * changes state
  */
 Slideout.prototype.beforechange = function (callback) {
   this._beforeChangeCallbacks[this._beforeChangeCallbacks.length] = callback;
+};
+
+/**
+ * Stores callback functions that are called after the slideout
+ * begins changing state
+ */
+Slideout.prototype.inchange = function (callback) {
+  this._inChangeCallbacks[this._inChangeCallbacks.length] = callback;
 };
 
 /**
@@ -110,7 +128,7 @@ Slideout.prototype.change = function (callback) {
  */
 Slideout.prototype.open = function() {
   var self = this;
-  self._runBeforeChangeCallbacks();
+  self._runInChangeCallbacks();
   if (html.className.search('slideout-open') === -1) { html.className += ' slideout-open'; }
   this._setTransition();
   this._translateXTo(this._padding);
@@ -127,7 +145,7 @@ Slideout.prototype.open = function() {
  */
 Slideout.prototype.close = function() {
   var self = this;
-  self._runBeforeChangeCallbacks();
+  self._runInChangeCallbacks();
   if (!this.isOpen() && !this._opening) { return this; }
   this._setTransition();
   this._translateXTo(0);
@@ -201,6 +219,7 @@ Slideout.prototype._initTouchEvents = function() {
    * Resets values on touchstart
    */
   this.panel.addEventListener(touch.start, function(eve) {
+    self._runBeforeChangeCallbacks();
     self._moved = false;
     self._opening = false;
     self._startOffsetX = eve.touches[0].pageX;
@@ -229,7 +248,6 @@ Slideout.prototype._initTouchEvents = function() {
    * Translates panel on touchmove
    */
   this.panel.addEventListener(touch.move, function(eve) {
-
     if (scrolling || self._preventOpen) { return; }
 
     var dif_x = eve.touches[0].clientX - self._startOffsetX;
