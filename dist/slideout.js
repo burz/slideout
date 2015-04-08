@@ -67,15 +67,25 @@ function Slideout(options) {
   this._initTouchEvents();
 
   // Init the change callbacks
-  this._callbacks = [];
+  this._beforeChangeCallbacks = [];
+  this._changeCallbacks = [];
 }
 
 /**
- * Runs the callbacks associated with the slideout
+ * Runs the beforechange callbacks associated with the slideout
  */
-Slideout.prototype._runCallbacks = function () {
-  for(var i = 0; i < this._callbacks.length; ++i) {
-    this._callbacks[i]();
+Slideout.prototype._runBeforeChangeCallbacks = function () {
+  for(var i = 0; i < this._beforeChangeCallbacks.length; ++i) {
+    this._beforeChangeCallbacks[i]();
+  }
+};
+
+/**
+ * Runs the beforechange callbacks associated with the slideout
+ */
+Slideout.prototype._runChangeCallbacks = function () {
+  for(var i = 0; i < this._changeCallbacks.length; ++i) {
+    this._changeCallbacks[i]();
   }
 };
 
@@ -83,8 +93,16 @@ Slideout.prototype._runCallbacks = function () {
  * Stores callback functions that are called after the slideout
  * finishes changing state
  */
+Slideout.prototype.beforechange = function (callback) {
+  this._beforeChangeCallbacks[this._beforeChangeCallbacks.length] = callback;
+};
+
+/**
+ * Stores callback functions that are called after the slideout
+ * finishes changing state
+ */
 Slideout.prototype.change = function (callback) {
-  this._callbacks[this._callbacks.length] = callback;
+  this._changeCallbacks[this._changeCallbacks.length] = callback;
 };
 
 /**
@@ -92,13 +110,14 @@ Slideout.prototype.change = function (callback) {
  */
 Slideout.prototype.open = function() {
   var self = this;
+  self._runBeforeChangeCallbacks();
   if (html.className.search('slideout-open') === -1) { html.className += ' slideout-open'; }
   this._setTransition();
   this._translateXTo(this._padding);
   this._opened = true;
   setTimeout(function() {
     self.panel.style.transition = self.panel.style['-webkit-transition'] = '';
-    self._runCallbacks();
+    self._runChangeCallbacks();
   }, this._duration + 50);
   return this;
 };
@@ -108,6 +127,7 @@ Slideout.prototype.open = function() {
  */
 Slideout.prototype.close = function() {
   var self = this;
+  self._runBeforeChangeCallbacks();
   if (!this.isOpen() && !this._opening) { return this; }
   this._setTransition();
   this._translateXTo(0);
@@ -115,7 +135,7 @@ Slideout.prototype.close = function() {
   setTimeout(function() {
     html.className = html.className.replace(/ slideout-open/, '');
     self.panel.style.transition = self.panel.style['-webkit-transition'] = '';
-    self._runCallbacks();
+    self._runChangeCallbacks();
   }, this._duration + 50);
   return this;
 };
